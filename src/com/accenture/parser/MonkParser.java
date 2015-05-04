@@ -152,22 +152,22 @@ public class MonkParser {
                     String firstCondition = this.constructExpresion(multipleConditions[3], "", masterTemplate);
                     String secondCondition = this.constructExpresion(multipleConditions[4], "", masterTemplate);
                     String operator = multipleConditions[2].toUpperCase();
-                    String constructValue = "If "+firstCondition+" "+operator+" "+secondCondition;
+                    String constructValue = "IF {"+firstCondition+" "+operator+" "+secondCondition+"}";
                     previousValue.push(constructValue);
                 }else if(value.trim().contains("(if")){
                     isCurrentIf = true;
-                    previousValue.push("If "+this.constructExpresion(value.replace("(if", "").trim(), "", masterTemplate));
+                    previousValue.push("IF {"+this.constructExpresion(value.replace("(if", "").trim(), "", masterTemplate)+"}");
                 }else if(isCurrentIf && value.trim().contains("(begin")){
                     previousValue.push(" ");
                     isCurrentIf = false;
                 }else if(value.trim().contains("(begin")){
                     if(previousValue.size() > 0){
-                        value = previousValue.lastElement().replace("If ", "");
+                        value = previousValue.lastElement().replace("IF {", "");
                     }else{
                         value = "";
                     }
                     if(!value.equals("") || !value.equals(" ")){
-                        previousValue.push("If Not "+value);
+                        previousValue.push("IF NOT {"+value);
                     }else{
                         previousValue.push(" ");
                     }
@@ -310,14 +310,14 @@ public class MonkParser {
         for (String value : previousValue) {
             if(!value.equals(" ") && !value.contains("segment_ID")){
                 if(!condition.equals(" ") && !condition.equals("")){
-                    if(!value.contains("If Not")){
+                    if(!value.contains("IF NOT")){
                         previousCondition = currentCondition;
                     }
                     currentCondition = value;
                     if(previousCondition.isEmpty()){
                         condition = currentCondition;
                     }else{
-                        condition = previousCondition+" and "+currentCondition;
+                        condition = previousCondition+" AND "+currentCondition;
                     }
                 }else{
                     currentCondition = value;
@@ -325,8 +325,6 @@ public class MonkParser {
                 }
             }
         }
-        System.out.println(condition);
-        System.out.println("------------------------------");
         return condition;
     }
 
