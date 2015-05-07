@@ -94,8 +94,13 @@ public class MonkParser {
             fileName = args[0];
         }else{
             Scanner scanInput = new Scanner(System.in);
-            System.out.println("Enter file name with extention:");
+            System.out.println("Enter file name without extention:");
             fileName = scanInput.nextLine();
+        }
+        if(fileName.startsWith("xl")){
+            fileName += ".tsc";
+        }else if(fileName.startsWith("id")){
+            fileName += ".isc";
         }
         String filePath = "C:\\monkParser\\"+fileName;
         monkParser.setFilePath(filePath);
@@ -147,22 +152,22 @@ public class MonkParser {
                     String firstCondition = this.constructExpresion(multipleConditions[3], "", masterTemplate);
                     String secondCondition = this.constructExpresion(multipleConditions[4], "", masterTemplate);
                     String operator = multipleConditions[2].toUpperCase();
-                    String constructValue = "IF {"+firstCondition+" "+operator+" "+secondCondition+"}";
+                    String constructValue = "If "+firstCondition+" "+operator+" "+secondCondition;
                     previousValue.push(constructValue);
                 }else if(value.trim().contains("(if")){
                     isCurrentIf = true;
-                    previousValue.push("IF {"+this.constructExpresion(value.replace("(if", "").trim(), "", masterTemplate)+"}");
+                    previousValue.push("If "+this.constructExpresion(value.replace("(if", "").trim(), "", masterTemplate));
                 }else if(isCurrentIf && value.trim().contains("(begin")){
                     previousValue.push(" ");
                     isCurrentIf = false;
                 }else if(value.trim().contains("(begin")){
                     if(previousValue.size() > 0){
-                        value = previousValue.lastElement().replace("IF {", "");
+                        value = previousValue.lastElement().replace("If ", "");
                     }else{
                         value = "";
                     }
                     if(!value.equals("") || !value.equals(" ")){
-                        previousValue.push("IF NOT {"+value);
+                        previousValue.push("If Not "+value);
                     }else{
                         previousValue.push(" ");
                     }
@@ -170,11 +175,6 @@ public class MonkParser {
                     previousValue.push(" ");
                 }
                 initialBraceCount = currentBraceCount;
-                for(int i =0; i<previousValue.size();i++){
-                    System.out.println(i+" "+previousValue.get(i));
-                }
-                System.out.println(value);
-                System.out.println("------------------------------------");
             }
         }
         File tempFile = new File(this.getTempFilePath());
@@ -217,15 +217,7 @@ public class MonkParser {
         }else if(value.contains("Copy") && expression.length > 2){
             String tempFieldName = this.consrtuctFieldName(fieldName, expression[1].split("\\."), masterTemplate);
             tempFieldName = this.assignFieldNameIfVariable(tempFieldName);
-            String additionalFunction = expression[3].trim().replace(")", "");
-            additionalFunction = additionalFunction.replaceAll("\"", "");
-            if(!additionalFunction.isEmpty()){
-                additionalFunction = additionalFunction.replaceAll("%0", "");
-                additionalFunction = " Copy 1st character to "+additionalFunction.replaceAll("d", "")+"th character from ";
-            }else{
-                additionalFunction = " Copy from ";
-            }
-            result = ",,"+additionalCondition+additionalFunction+tempFieldName;
+            result = ",,"+additionalCondition+expression[3]+" "+tempFieldName;
             fieldName = this.consrtuctFieldName(fieldName, expression[2].split("\\."), masterTemplate)+",,,,";
         }
         result = result.replaceAll("\\)", "");
@@ -233,7 +225,7 @@ public class MonkParser {
         return value;
     }
 
-    private boolean isRoutingRuleFile() {
+    private boolean  isRoutingRuleFile() {
         String[] fileFormatArray = this.filePath.split("\\.");
         String fileFormat = fileFormatArray[fileFormatArray.length - 1];
         return "isc".equals(fileFormat);
@@ -314,25 +306,18 @@ public class MonkParser {
     }
 
     private String constructCondition(Stack<String> previousValue) {
-        String condition = "",previousCondition ="", currentCondition ="";
+        String condition = "";
         for (String value : previousValue) {
+//            System.out.println(value);
             if(!value.equals(" ") && !value.contains("segment_ID")){
                 if(!condition.equals(" ") && !condition.equals("")){
-                    if(!value.contains("IF NOT")){
-                        previousCondition = currentCondition;
-                    }
-                    currentCondition = value;
-                    if(previousCondition.isEmpty()){
-                        condition = currentCondition;
-                    }else{
-                        condition = previousCondition+" AND "+currentCondition;
-                    }
+                    condition = condition+" and "+value;
                 }else{
-                    currentCondition = value;
-                    condition = currentCondition;
+                    condition += value;
                 }
             }
         }
+//        System.out.println("------------------------------");
         return condition;
     }
 
@@ -362,9 +347,6 @@ public class MonkParser {
         logicList.put("(copy-strip", "Copy");
         logicList.put("(insert", "Transform");
         logicList.put("(string-append", "Concatinate");
-//        TO DO:
-//        load, data-map, duplicate-strip, let, find-get-before, custom-find-get-after, unique_id,
-//        custom-change-pattern, list-lookup.
         Iterator entries = logicList.entrySet().iterator();
         while (entries.hasNext()) {
           Entry thisEntry = (Entry) entries.next();
