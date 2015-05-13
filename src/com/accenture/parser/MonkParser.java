@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.Scanner;
 import java.util.Stack;
 
 public class MonkParser {
@@ -26,39 +25,44 @@ public class MonkParser {
         this.setResultPath(filePath);
     }
     
-    public String getFilePath(){
+    private String getFilePath(){
         return this.filePath;
     }
     
-    public void setTempFilePath(String filePath){
+    private void setTempFilePath(String filePath){
         String[] tempPath= filePath.split("\\.");
-        String tempFilePath = tempPath[0]+"_tmp.txt";
-        this.tempFilePath = tempFilePath;
+        this.tempFilePath = tempPath[0]+"_tmp.txt";
     }
     
-    public String getTempFilePath(){
+    private String getTempFilePath(){
         return this.tempFilePath;
     }
     
-    public void setResultPath(String filePath){
-        String[] tempPath= filePath.split("\\.");
-        String tempResultPath = tempPath[0]+"_Output.csv";
-        this.resultPath = tempResultPath;
+    private void setResultPath(String filePath){
+        String[] tempPath= filePath.split("\\\\");
+        String fileName = tempPath[tempPath.length -1], tempResultFilePath = "";
+        String[] appendFileName = fileName.split("\\.");
+        fileName = appendFileName[0]+".csv";
+        for(int i =0 ; i< tempPath.length-1; i++){
+            tempResultFilePath += (tempPath[i]+"\\");
+        }
+        tempResultFilePath += fileName;
+        this.resultPath = tempResultFilePath;
     }
     
     public String getResultPath(){
         return this.resultPath;
     }
     
-    public void setLocalVariableValue(String key, String value){
+    private void setLocalVariableValue(String key, String value){
         this.localVariableValue.put(key, value);
     }
     
-    public HashMap getLocalVariableValue(){
+    private HashMap getLocalVariableValue(){
         return this.localVariableValue;
     }
     
-    private void readFile() throws IOException{
+    public void readFile() throws IOException{
         BufferedReader br = new BufferedReader(new FileReader(new File(this.getFilePath())));
         String value;
         boolean logicStarted = false;
@@ -85,31 +89,7 @@ public class MonkParser {
         }
     }
     
-    public static void main(String[] args) {
-        MonkParser monkParser = new MonkParser();
-        MasterTemplateUtil masterTemplate = new MasterTemplateUtil();
-        masterTemplate.buildMasterForAllSegement();
-        String fileName;
-        if(args.length > 0){
-            fileName = args[0];
-        }else{
-            Scanner scanInput = new Scanner(System.in);
-            System.out.println("Enter file name with extention:");
-            fileName = scanInput.nextLine();
-        }
-        String filePath = "C:\\monkParser\\"+fileName;
-        monkParser.setFilePath(filePath);
-        try{
-            monkParser.readFile();
-            monkParser.constructFinalLogic(masterTemplate);
-        }catch(FileNotFoundException exception){
-           System.out.println("Was Not able to find file:   "+exception);
-        }catch(IOException exception){
-           System.out.println("Reading File has some difficulties:   "+exception);
-        }
-    }
-
-    private void constructFinalLogic(MasterTemplateUtil masterTemplate) throws FileNotFoundException, IOException {
+    public void constructFinalLogic(MasterTemplateUtil masterTemplate) throws FileNotFoundException, IOException {
         BufferedReader br = new BufferedReader(new FileReader(new File(this.getTempFilePath())));
         String value = "", condition = "";
         FileWriter fw = new FileWriter(new File(this.getResultPath()));
@@ -170,11 +150,6 @@ public class MonkParser {
                     previousValue.push(" ");
                 }
                 initialBraceCount = currentBraceCount;
-                for(int i =0; i<previousValue.size();i++){
-                    System.out.println(i+" "+previousValue.get(i));
-                }
-                System.out.println(value);
-                System.out.println("------------------------------------");
             }
         }
         File tempFile = new File(this.getTempFilePath());
@@ -195,10 +170,14 @@ public class MonkParser {
             fieldName = this.consrtuctFieldName(fieldName, expression[2].split("\\."), masterTemplate);
         }else if(value.contains("Concatinate")){
             for(int i = 2; i<expressionSize-2; i++){
-                System.out.println(i+" "+expression[i]);
-                result = this.consrtuctFieldName(fieldName, expression[i].split("\\."), masterTemplate)+"+";
+                if(i == expressionSize-3){
+                    result += this.consrtuctFieldName(fieldName, expression[i].split("\\."), masterTemplate);
+                }else{
+                    result += (this.consrtuctFieldName(fieldName, expression[i].split("\\."), masterTemplate)+"+");
+                }
             }
-            fieldName = this.consrtuctFieldName(fieldName, expression[expressionSize-1].split("\\."), masterTemplate);
+            result = ",,"+additionalCondition+" Concatinate following value("+result.replace("\"+\"", "\" \"")+")";
+            fieldName = this.consrtuctFieldName(fieldName, expression[expressionSize-2].split("\\."), masterTemplate);
         }else if(value.contains("String_length")){
             condition = expression[0].replace("(", "");
             result = expression[3];
@@ -319,7 +298,11 @@ public class MonkParser {
             if(!value.equals(" ") && !value.contains("segment_ID")){
                 if(!condition.equals(" ") && !condition.equals("")){
                     if(!value.contains("IF NOT")){
-                        previousCondition = currentCondition;
+                        if(previousCondition.length() > 0){
+                            previousCondition = previousCondition+" AND "+currentCondition;
+                        }else{
+                            previousCondition = currentCondition;
+                        }
                     }
                     currentCondition = value;
                     if(previousCondition.isEmpty()){
@@ -343,11 +326,6 @@ public class MonkParser {
             previousCondition = this.getLocalVariableValue().get(variables[1]).toString().split("set as")[0];
         }
         fieldName = condition+" set as "+this.consrtuctFieldName(fieldName, variables[2].split("\\."), masterTemplate);
-//        System.out.println(previousValues);
-//        System.out.println(previousCondition);
-//        System.out.println(fieldName);
-//        System.out.println(previousValues+fieldName.replace(previousCondition, ""));
-//        System.out.println("-------------------------------------------------");
         this.setLocalVariableValue(variables[1],fieldName);
     }
 
@@ -357,8 +335,8 @@ public class MonkParser {
         logicList.put("(regex", "contains");
         logicList.put("(string-begins-with?", "Begins_with");
         logicList.put("(string-length", "String_length");
-        logicList.put("empty-string?", "Is_Empty");
         logicList.put("(empty-string?", "Is_Empty");
+        logicList.put("empty-string?", "Is_Empty");
         logicList.put("(copy-strip", "Copy");
         logicList.put("(insert", "Transform");
         logicList.put("(string-append", "Concatinate");
