@@ -1,4 +1,7 @@
-/dist/
+/dist/*
 /MonkParser/build/
 /MonkParser/dist/
 /MonkParser/nbproject/private/
+build/*
+/dist/*
+/nbproject/*
