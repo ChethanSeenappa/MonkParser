@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Stack;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MonkParser {
     private String filePath;
@@ -48,6 +50,7 @@ public class MonkParser {
         }
         tempResultFilePath += fileName;
         this.resultPath = tempResultFilePath;
+//        this.resultPath = "C:\\Users\\dheeraj\\Desktop\\Legacy_xl_EclipsysPRD_VXU_to_ARRA_TR.csv";
     }
     
     public String getResultPath(){
@@ -113,7 +116,7 @@ public class MonkParser {
                 }else if(value.contains("copy-strip") || value.contains("insert")){
                     writeToFile.write(this.constructExpresion(value, condition, masterTemplate));
                     writeToFile.write(System.lineSeparator());
-                }else if(value.contains("(set!")){
+                }else if(value.contains("(set!") || value.contains("(let")){
                     this.assignValueForVariables(condition, value.split(" "), masterTemplate);
                 }else if(value.trim().contains("(do")){
                     String[] doLogic = value.split(" ");
@@ -124,8 +127,12 @@ public class MonkParser {
                         (value.trim().contains("(and")|| value.trim().contains("(or")) ){
                     isCurrentIf = true;
                     String[] multipleConditions = value.split("\\(");
+                    System.out.println("********************************************************");
                     String firstCondition = this.constructExpresion(multipleConditions[3], "", masterTemplate);
+                    System.out.println(firstCondition);
                     String secondCondition = this.constructExpresion(multipleConditions[4], "", masterTemplate);
+                    System.out.println(firstCondition);
+                    System.out.println("********************************************************");
                     String operator = multipleConditions[2].toUpperCase();
                     String constructValue = "IF {"+firstCondition+" "+operator+" "+secondCondition+"}";
                     previousValue.push(constructValue);
@@ -176,7 +183,7 @@ public class MonkParser {
                     result += (this.consrtuctFieldName(fieldName, expression[i].split("\\."), masterTemplate)+"+");
                 }
             }
-            result = ",,"+additionalCondition+" Concatinate following value("+result.replace("\"+\"", "\" \"")+")";
+            result = ",,,"+additionalCondition+" Concatinate following value("+result.replace("\"+\"", "\" \"")+")";
             fieldName = this.consrtuctFieldName(fieldName, expression[expressionSize-2].split("\\."), masterTemplate);
         }else if(value.contains("String_length")){
             condition = expression[0].replace("(", "");
@@ -191,7 +198,7 @@ public class MonkParser {
             for (int i =1; i<expressionSize-2 ; i++){
                 result = result+" "+expression[i];
             }
-            result = ",,"+additionalCondition+" set as"+result;
+            result = ",,,"+additionalCondition+" set as"+result;
             fieldName = this.consrtuctFieldName(fieldName, expression[expressionSize-2].split("\\."), masterTemplate)+",,,,";
         }else if(value.contains("Copy") && expression.length > 2){
             String tempFieldName = this.consrtuctFieldName(fieldName, expression[1].split("\\."), masterTemplate);
@@ -204,7 +211,7 @@ public class MonkParser {
             }else{
                 additionalFunction = " Copy from ";
             }
-            result = ",,"+additionalCondition+additionalFunction+tempFieldName;
+            result = ",,,"+additionalCondition+additionalFunction+tempFieldName;
             fieldName = this.consrtuctFieldName(fieldName, expression[2].split("\\."), masterTemplate)+",,,,";
         }
         result = result.replaceAll("\\)", "");
@@ -330,16 +337,16 @@ public class MonkParser {
     }
 
     private String processExpressionLogic(String value) {
+        value = value.replaceFirst("\\(", "");
         HashMap logicList = new HashMap();
-        logicList.put("(string=?", "Is_Equal_to");
-        logicList.put("(regex", "contains");
-        logicList.put("(string-begins-with?", "Begins_with");
-        logicList.put("(string-length", "String_length");
-        logicList.put("(empty-string?", "Is_Empty");
+        logicList.put("string=?", "Is_Equal_to");
+        logicList.put("regex", "contains");
+        logicList.put("string-begins-with?", "Begins_with");
+        logicList.put("string-length", "String_length");
         logicList.put("empty-string?", "Is_Empty");
-        logicList.put("(copy-strip", "Copy");
-        logicList.put("(insert", "Transform");
-        logicList.put("(string-append", "Concatinate");
+        logicList.put("copy-strip", "Copy");
+        logicList.put("insert", "Transform");
+        logicList.put("string-append", "Concatinate");
 //        TO DO:
 //        load, data-map, duplicate-strip, let, find-get-before, custom-find-get-after, unique_id,
 //        custom-change-pattern, list-lookup.
@@ -355,4 +362,19 @@ public class MonkParser {
         return value;
     }
 
+//    public static void main(String[] args){
+//        MonkParser monkParser = new MonkParser();
+//        MasterTemplateUtil masterTemplate = new MasterTemplateUtil();
+//        masterTemplate.buildMasterForAllSegement();
+//        monkParser.setFilePath("C:\\Users\\dheeraj\\Desktop\\xl_EclipsysPRD_VXU_to_ARRA.tsc");
+//        try {
+//            monkParser.readFile();
+//            monkParser.constructFinalLogic(masterTemplate);
+//        } catch (FileNotFoundException ex) {
+//            System.out.println("Was Not able to find file:   "+ex);
+//        } catch (IOException ex) {
+//            System.out.println("Reading File has some difficulties:   "+ex);
+//        }
+//    }
+    
 }
