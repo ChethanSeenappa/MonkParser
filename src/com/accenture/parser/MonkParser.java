@@ -32,8 +32,15 @@ public class MonkParser {
     }
     
     private void setTempFilePath(String filePath){
-        String[] tempPath= filePath.split("\\.");
-        this.tempFilePath = tempPath[0]+"_tmp.txt";
+        String[] tempPath= filePath.split("\\\\");
+        String fileName = tempPath[tempPath.length -1], tempResultFilePath = "";
+        String[] appendFileName = fileName.split("\\.");
+        fileName = appendFileName[0]+"_tmp.txt";
+        for(int i =0 ; i< tempPath.length-1; i++){
+            tempResultFilePath += (tempPath[i]+"\\");
+        }
+        tempResultFilePath += fileName;
+        this.tempFilePath = tempResultFilePath;
     }
     
     private String getTempFilePath(){
